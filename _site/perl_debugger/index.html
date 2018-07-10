@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>
+      
+        Debugging Perl | bbmielke.github.io
+      
+    </title>
+
+    <meta name="author" content="" />
+
+    <!-- Description -->
+    
+      <meta name="description" content="A persentation on debugging perl." />
+    
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="/reveal.js/css/reveal.css"/>
+    
+      <link rel="stylesheet" href="/reveal.js/css/theme/black.css" id="theme"/>
+    
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="/reveal.js/lib/css/zenburn.css"/>
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? '/reveal.js/css/print/pdf.css' : '/reveal.js/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="canonical" href="http://localhost:4000/perl_debugger/">
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="slides">
+        <section data-markdown>
+## Debugging Perl
+
+* Perl has been around since 1987
+* Large amounts of legacy Perl code
+* Reputation as a write-only language
+* To work with Perl you will need to flex your debugging capabilities
+
+</section>
+
+<section data-markdown>
+## Traditional Debugging
+
+* print or say statements
+    * print "I've reached this spot in my code.\n";
+    * print "I should not have reached this spot in the code.\n";
+* print Dumper(\%big_hash);
+
+</section>
+
+<section data-markdown>
+## Logging
+
+* Logging is invaluable to troubleshooting applications.
+* Libraries like [Log::Log4perl](https://metacpan.org/pod/Log::Log4perl) provide a lot of logging functionality
+    * Level based log messages such as trace, debug, info, warn, error, fatal
+    * Configurable outside of your perl code
+* Logging Dumper calls is suggested
+
+</section>
+
+<section data-markdown>
+## Perl Debugger
+
+* Sometimes you just want a little bit more power in your troubleshooting arsenal.
+* perl -d script.pl
+    * s - step into the next line of code
+    * n - step over the next line of code
+    * b - set a break point
+    * c - continue to break point
+    * x - dump variable
+    * p - print variable
+    * h - help 
+
+</section>
+
+<section>
+<pre class="perl"><code>
+use strict;
+use warnings;
+
+my %isa_fish = (map { $_ => 1 } qw(koi bass sunfish trout));
+
+for my $thing (qw(trout bear carp)) {
+    my $not = $isa_fish{$thing} ? '' : ' not';
+    print "$thing is${not} a fish\n";
+}
+</code></pre>
+<pre><code class="fragment" data-fragment-index="1">
+$ perl script.pl
+trout is a fish
+bear is not a fish
+carp is not a fish
+$ 
+</code></pre>
+</section>
+
+<section>
+
+    <pre><code>
+$ perl -d script.pl
+
+Loading DB routines from perl5db.pl version 1.51
+Editor support available.
+
+Enter h or 'h h' for help, or 'man perldebug' for more help.
+
+main::(script.pl:6):	my %isa_fish = (map { $_ => 1 } qw(koi bass sunfish trout));
+  DB<1> l
+6==>	my %isa_fish = (map { $_ => 1 } qw(koi bass sunfish trout));
+7 	
+8:	for my $thing (qw(trout bear carp)) {
+9:	    my $not = $isa_fish{$thing} ? '' : ' not';
+10:	    print "$thing is${not} a fish\n";
+11 	}
+12 	
+  DB<1> b 10 $thing eq 'carp'
+  DB<2> c
+trout is a fish
+bear is not a fish
+main::(script.pl:10):	    print "$thing is${not} a fish\n";
+  DB<2> x $thing
+0  'carp'
+  DB<3> x $not
+0  ' not'
+  DB<4> x \%isa_fish
+0  HASH(0x7fcc2e82f818)
+   'bass' => 1
+   'koi' => 1
+   'sunfish' => 1
+   'trout' => 1
+  DB<5> q
+    </code></pre>
+</section>
+
+<section data-markdown>
+## Perl Debugger Tricks
+
+* $DB::single = 1;
+* mojolicious - debugs just fine at the commandline if you use perl -d to start your server
+* [mod_perl](https://metacpan.org/pod/Apache::DB)
+
+</section>
+
+      </div>
+    </div>
+
+    <script src="/reveal.js/lib/js/head.min.js"></script>
+    <script src="/reveal.js/js/reveal.js"></script>
+    <script>
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        
+          transition: 'slide',
+        
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: '/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: '/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: '/reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: '/reveal.js/plugin/zoom-js/zoom.js', async: true },
+          { src: '/reveal.js/plugin/notes/notes.js', async: true }
+        ]
+      });
+    </script>
+
+  </body>
+</html>
+
